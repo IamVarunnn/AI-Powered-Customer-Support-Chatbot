@@ -1,15 +1,18 @@
 package com.project.supportchatbot.controller;
 
+import com.project.supportchatbot.dto.LoginRequest;
 import com.project.supportchatbot.dto.RegisterRequest;
 import com.project.supportchatbot.dto.UserResponse;
 import com.project.supportchatbot.entity.User;
 import com.project.supportchatbot.service.UserService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -36,5 +39,28 @@ public class AuthController {
                 savedUser.getCreatedAt()
         );
 
+    }
+
+    @PostMapping("/login")
+    public UserResponse login(@Valid @RequestBody LoginRequest request) {
+        try {
+            User user = userService.login(request);
+
+            return new UserResponse(
+                    user.getId(),
+                    user.getName(),
+                    user.getEmail(),
+                    user.getCreatedAt()
+            );
+        } catch (RuntimeException exception) {
+            if ("Invalid email or password".equals(exception.getMessage())) {
+                throw new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Invalid email or password"
+                );
+            }
+
+            throw exception;
+        }
     }
 }
