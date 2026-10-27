@@ -1,9 +1,11 @@
 package com.project.supportchatbot.controller;
 
 import com.project.supportchatbot.dto.LoginRequest;
+import com.project.supportchatbot.dto.LoginResponse;
 import com.project.supportchatbot.dto.RegisterRequest;
 import com.project.supportchatbot.dto.UserResponse;
 import com.project.supportchatbot.entity.User;
+import com.project.supportchatbot.service.JWTService;
 import com.project.supportchatbot.service.UserService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -20,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthController {
 
     private final UserService userService;
+    private final JWTService jwtService;
 
     @PostMapping("/register")
     public UserResponse  registerUser(@Valid @RequestBody RegisterRequest registerRequest){
@@ -42,25 +45,23 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public UserResponse login(@Valid @RequestBody LoginRequest request) {
-        try {
-            User user = userService.login(request);
+    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
 
-            return new UserResponse(
-                    user.getId(),
-                    user.getName(),
-                    user.getEmail(),
-                    user.getCreatedAt()
-            );
-        } catch (RuntimeException exception) {
-            if ("Invalid email or password".equals(exception.getMessage())) {
-                throw new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED,
-                        "Invalid email or password"
-                );
-            }
+        User user = userService.login(request);
 
-            throw exception;
-        }
+        String token = jwtService.generateToken(user.getEmail());
+
+        UserResponse userResponse = new UserResponse(
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getCreatedAt()
+        );
+
+        return new LoginResponse(
+                token,
+                "Bearer",
+                userResponse
+        );
     }
 }
