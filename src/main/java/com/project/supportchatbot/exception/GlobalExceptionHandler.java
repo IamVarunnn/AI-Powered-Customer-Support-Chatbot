@@ -10,15 +10,12 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<Map<String, String>> handleDuplicateEmail(EmailAlreadyExistsException e){
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidCredentials(
+            InvalidCredentialsException exception) {
 
-        Map<String, String> response = Map.of(
-                "error",
-                e.getMessage()
-        );
-
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(response);
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", exception.getMessage()));
     }
 }
