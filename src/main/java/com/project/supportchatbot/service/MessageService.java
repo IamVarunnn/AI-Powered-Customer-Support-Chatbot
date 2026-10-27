@@ -10,7 +10,9 @@ import com.project.supportchatbot.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @Service
@@ -22,6 +24,7 @@ public class MessageService {
     private final UserRepository userRepository;
     private final OpenRouterService openRouterService;
 
+
     public Message sendMessage(
             Integer conversationId,
             String email,
@@ -31,7 +34,24 @@ public class MessageService {
         Conversation conversation =
                 getOwnedConversation(conversationId, email);
 
-        // 2. Save the user's message
+        // 2. Load previous messages before saving the new one
+        List<Message> previousMessages =
+                messageRepository
+                        .findByConversationIdOrderByCreatedAtAsc(
+                                conversationId);
+
+        List<Map<String, String>> conversationHistory =
+                new ArrayList<>();
+
+        for (Message message : previousMessages) {
+            conversationHistory.add(Map.of(
+                    "role", message.getRole().equals("USER")
+                            ? "user" : "assistant",
+                    "content", message.getContent()
+            ));
+        }
+
+        // 3. Save the new user message
         Message userMessage = new Message();
         userMessage.setContent(content);
         userMessage.setRole("USER");
@@ -39,11 +59,17 @@ public class MessageService {
 
         messageRepository.save(userMessage);
 
-        // 3. Generate the AI response
-        String aiResponse =
-                openRouterService.generateResponse(content);
+        // 4. Add the current message to the history sent to the AI
+        conversationHistory.add(Map.of(
+                "role", "user",
+                "content", content
+        ));
 
-        // 4. Save the assistant's response
+        // 5. Generate the AI response using the full history
+        String aiResponse =
+                openRouterService.generateResponse(conversationHistory);
+
+        // 6. Save the assistant's response
         Message assistantMessage = new Message();
         assistantMessage.setContent(aiResponse);
         assistantMessage.setRole("ASSISTANT");
@@ -51,6 +77,7 @@ public class MessageService {
 
         return messageRepository.save(assistantMessage);
     }
+
 
     public Message saveMessage(
             Integer conversationId,

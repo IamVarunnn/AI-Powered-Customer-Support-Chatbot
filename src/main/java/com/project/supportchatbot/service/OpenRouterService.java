@@ -6,8 +6,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
+import com.project.supportchatbot.exception.AIServiceException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,54 +27,77 @@ public class OpenRouterService {
 
     private final RestClient restClient;
 
-    public String generateResponse(String prompt) {
+    public String generateResponse(
+            List<Map<String, String>> conversationHistory) {
+
+        List<Map<String, String>> messages = new ArrayList<>();
+
+        messages.add(Map.of(
+                "role", "system",
+                "content", """
+                        You are a helpful customer support assistant.
+
+                        Answer questions clearly using simple language
+                        and actionable steps.
+                        Use previous messages to understand context.
+
+                        Never invent company-specific information,
+                        including URLs, contact details, password
+                        requirements, security policies, or procedures.
+
+                        If company-specific information has not been
+                        provided, say that you do not know it.
+                        Distinguish general advice from verified facts.
+                        Ask clarifying questions when necessary.
+                        Do not reveal internal reasoning.
+                        """
+        ));
+
+        messages.addAll(conversationHistory);
 
         Map<String, Object> requestBody = Map.of(
                 "model", model,
-                "messages", List.of(
-                        Map.of(
-                                "role", "system",
-                                "content", """
-                                You are a helpful customer support assistant.
-                                Answer the user's question clearly and accurately.
-                                Use simple language and actionable steps.
-                                If the question is ambiguous, ask for clarification.
-                                Never invent company-specific policies or details.
-                                Do not reveal internal reasoning.
-                                """
-                        ),
-                        Map.of(
-                                "role", "user",
-                                "content", prompt
-                        )
-                )
+                "messages", messages
         );
 
-        JsonNode response = restClient.post()
-                .uri("/chat/completions")
-                .contentType(MediaType.APPLICATION_JSON)
-                .header("Authorization", "Bearer " + apiKey)
-                .body(requestBody)
-                .retrieve()
-                .body(JsonNode.class);
-        System.out.println("OpenRouter response: " + response);
+        try {
+            JsonNode response = restClient.post()
+                    .uri("/chat/completions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .body(requestBody)
+                    .retrieve()
+                    .body(JsonNode.class);
 
-        if (response == null
-                || response.path("choices").isEmpty()
-                || response.path("choices").get(0)
-                .path("message").path("content").isMissingNode()
-                || response.path("choices").get(0)
-                .path("message").path("content").isNull()) {
+            if (response == null
+                    || response.path("choices").isEmpty()
+                    || response.path("choices").get(0)
+                    .path("message").path("content").isMissingNode()
+                    || response.path("choices").get(0)
+                    .path("message").path("content").isNull()) {
 
-            throw new IllegalStateException(
-                    "OpenRouter returned an empty response"
+                throw new IllegalStateException(
+                        "The AI provider returned an empty response."
+                );
+            }
+
+            return response.path("choices")
+                    .get(0)
+                    .path("message")
+                    .path("content")
+                    .asString();
+
+        } catch (RestClientResponseException ex) {
+            throw new AIServiceException(
+                    "The AI provider returned an error.",
+                    ex
+            );
+
+        } catch (ResourceAccessException ex) {
+            throw new AIServiceException(
+                    "The AI provider is temporarily unavailable.",
+                    ex
             );
         }
-
-        return response.path("choices")
-                .get(0)
-                .path("message")
-                .path("content")
-                .asString();
     }
 }

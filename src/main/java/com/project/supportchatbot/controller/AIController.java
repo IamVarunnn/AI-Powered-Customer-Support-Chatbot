@@ -5,6 +5,7 @@ import com.project.supportchatbot.service.OpenRouterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -26,9 +27,19 @@ public class AIController {
             );
         }
 
+        List<Map<String, String>> conversationHistory =
+                List.of(
+                        Map.of(
+                                "role", "user",
+                                "content", prompt
+                        )
+                );
+
         return Map.of(
                 "response",
-                openRouterService.generateResponse(prompt)
+                openRouterService.generateResponse(
+                        conversationHistory
+                )
         );
     }
 }

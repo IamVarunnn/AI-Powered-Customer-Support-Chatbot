@@ -18,4 +18,16 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of("error", exception.getMessage()));
     }
+
+    @ExceptionHandler(AIServiceException.class)
+    public ResponseEntity<Map<String, String>> handleAIServiceException(
+            AIServiceException ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of(
+                        "error", "AI_SERVICE_UNAVAILABLE",
+                        "message", "The AI assistant is temporarily unavailable. Please try again later."
+                ));
+    }
 }
