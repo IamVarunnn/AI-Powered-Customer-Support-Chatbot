@@ -37,4 +37,18 @@ public class ConversationService {
         return conversationRepository
                 .findByUserIdOrderByCreatedAtDesc(user.getId());
     }
+
+
+    public Conversation getConversation(Integer conversationId, String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new IllegalStateException("Authenticated user not found"));
+
+        return conversationRepository
+                .findByIdAndUserId(conversationId, user.getId())
+                .orElseThrow(() ->
+                        new java.util.NoSuchElementException("Conversation not found"));
+    }
+
 }

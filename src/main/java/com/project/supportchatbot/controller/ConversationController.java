@@ -50,4 +50,19 @@ public class ConversationController {
                 conversation.getCreatedAt()
         );
     }
+
+
+    @GetMapping("/{id}")
+    public ConversationResponse getConversation(
+            @PathVariable Integer id,
+            Authentication authentication) {
+
+        Conversation conversation = conversationService.getConversation(
+                id,
+                authentication.getName()
+        );
+
+        return toResponse(conversation);
+    }
+
 }

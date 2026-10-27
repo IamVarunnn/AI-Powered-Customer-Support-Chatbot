@@ -1,4 +1,11 @@
+
 package com.project.supportchatbot.dto;
 
-public class MessageResponse {
-}
+import java.time.LocalDateTime;
+
+public record MessageResponse(
+        Integer id,
+        String content,
+        String role,
+        LocalDateTime createdAt
+) {}
