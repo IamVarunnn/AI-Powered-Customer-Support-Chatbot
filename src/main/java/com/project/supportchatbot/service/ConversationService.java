@@ -86,4 +86,17 @@ public class ConversationService {
         conversationRepository.delete(conversation);
     }
 
+    public Conversation renameConversation(
+            Integer conversationId,
+            String email,
+            String newTitle) {
+
+        Conversation conversation =
+                getConversation(conversationId, email);
+
+        conversation.setTitle(newTitle.trim());
+
+        return conversationRepository.save(conversation);
+    }
+
 }

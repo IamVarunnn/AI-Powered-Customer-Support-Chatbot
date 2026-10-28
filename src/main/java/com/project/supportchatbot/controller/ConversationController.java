@@ -101,4 +101,20 @@ public class ConversationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{id}")
+    public ConversationResponse renameConversation(
+            @PathVariable Integer id,
+            @Valid @RequestBody ConversationRequest request,
+            Authentication authentication) {
+
+        Conversation conversation =
+                conversationService.renameConversation(
+                        id,
+                        authentication.getName(),
+                        request.getTitle()
+                );
+
+        return toResponse(conversation);
+    }
+
 }
