@@ -23,7 +23,11 @@ public class ConversationService {
                         new IllegalStateException("Authenticated user not found"));
 
         Conversation conversation = new Conversation();
-        conversation.setTitle(title);
+        conversation.setTitle(
+                title == null || title.isBlank()
+                        ? "New Conversation"
+                        : title
+        );
         conversation.setUser(user);
 
         return conversationRepository.save(conversation);

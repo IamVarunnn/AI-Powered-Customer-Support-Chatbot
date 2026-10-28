@@ -34,11 +34,35 @@ public class MessageService {
         Conversation conversation =
                 getOwnedConversation(conversationId, email);
 
+        // Generate a title from the first message
+        if ("New Conversation".equals(conversation.getTitle())) {
+
+            String title = content.length() > 40
+                    ? content.substring(0, 40) + "..."
+                    : content;
+
+            conversation.setTitle(title);
+            conversationRepository.save(conversation);
+        }
+
         // 2. Load previous messages before saving the new one
+        List<Message> allPreviousMessages =
+                messageRepository.findByConversationIdOrderByCreatedAtAsc(
+                        conversationId
+                );
+
+        int historyLimit = 10;
+
+        int startIndex = Math.max(
+                0,
+                allPreviousMessages.size() - historyLimit
+        );
+
         List<Message> previousMessages =
-                messageRepository
-                        .findByConversationIdOrderByCreatedAtAsc(
-                                conversationId);
+                allPreviousMessages.subList(
+                        startIndex,
+                        allPreviousMessages.size()
+                );
 
         List<Map<String, String>> conversationHistory =
                 new ArrayList<>();
@@ -86,6 +110,8 @@ public class MessageService {
 
         Conversation conversation =
                 getOwnedConversation(conversationId, email);
+
+
 
         Message message = new Message();
         message.setContent(content);
