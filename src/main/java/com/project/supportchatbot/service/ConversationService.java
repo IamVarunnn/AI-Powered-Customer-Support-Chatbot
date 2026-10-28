@@ -7,13 +7,17 @@ import com.project.supportchatbot.repository.ConversationRepository;
 import com.project.supportchatbot.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import com.project.supportchatbot.repository.MessageRepository;
 import java.util.List;
 
 @Service
 @AllArgsConstructor
 public class ConversationService {
 
+    private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final UserRepository userRepository;
 
@@ -33,13 +37,22 @@ public class ConversationService {
         return conversationRepository.save(conversation);
     }
 
-    public List<Conversation> getUserConversations(String email) {
+    public Page<Conversation> getUserConversations(
+            String email,
+            int page,
+            int size) {
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new IllegalStateException("Authenticated user not found"));
+                        new IllegalStateException(
+                                "Authenticated user not found"));
 
-        return conversationRepository
-                .findByUserIdOrderByCreatedAtDesc(user.getId());
+        Pageable pageable = PageRequest.of(page, size);
+
+        return conversationRepository.findByUserId(
+                user.getId(),
+                pageable
+        );
     }
 
 
@@ -53,6 +66,24 @@ public class ConversationService {
                 .findByIdAndUserId(conversationId, user.getId())
                 .orElseThrow(() ->
                         new java.util.NoSuchElementException("Conversation not found"));
+    }
+
+    public void deleteConversation(Integer conversationId, String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new IllegalStateException(
+                                "Authenticated user not found"));
+
+        Conversation conversation = conversationRepository
+                .findByIdAndUserId(conversationId, user.getId())
+                .orElseThrow(() ->
+                        new java.util.NoSuchElementException(
+                                "Conversation not found"));
+
+        messageRepository.deleteByConversationId(conversation.getId());
+
+        conversationRepository.delete(conversation);
     }
 
 }

@@ -7,10 +7,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.NoSuchElementException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger logger =
+            LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleInvalidCredentials(
@@ -61,6 +66,32 @@ public class GlobalExceptionHandler {
                 .body(Map.of(
                         "error", "VALIDATION_ERROR",
                         "message", message
+                ));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleUnexpectedException(
+            Exception ex) {
+
+        logger.error("Unexpected API error", ex);
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of(
+                        "error", "INTERNAL_SERVER_ERROR",
+                        "message", "An unexpected error occurred. Please try again later."
+                ));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(
+            IllegalArgumentException ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of(
+                        "error", "INVALID_REQUEST",
+                        "message", ex.getMessage()
                 ));
     }
 }

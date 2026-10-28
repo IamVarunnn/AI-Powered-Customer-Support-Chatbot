@@ -5,10 +5,14 @@ import com.project.supportchatbot.dto.ConversationRequest;
 import com.project.supportchatbot.dto.ConversationResponse;
 import com.project.supportchatbot.entity.Conversation;
 import com.project.supportchatbot.service.ConversationService;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -33,14 +37,32 @@ public class ConversationController {
     }
 
     @GetMapping
-    public List<ConversationResponse> getUserConversations(
-            Authentication authentication) {
+    public Page<ConversationResponse> getUserConversations(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        if (page < 0) {
+            throw new IllegalArgumentException(
+                    "Page number cannot be negative");
+        }
+
+        if (size < 1 || size > 50) {
+            throw new IllegalArgumentException(
+                    "Page size must be between 1 and 50");
+        }
 
         return conversationService
-                .getUserConversations(authentication.getName())
-                .stream()
-                .map(this::toResponse)
-                .toList();
+                .getUserConversations(
+                        authentication.getName(),
+                        page,
+                        size
+                )
+                .map(conversation -> new ConversationResponse(
+                        conversation.getId(),
+                        conversation.getTitle(),
+                        conversation.getCreatedAt()
+                ));
     }
 
     private ConversationResponse toResponse(Conversation conversation) {
@@ -63,6 +85,20 @@ public class ConversationController {
         );
 
         return toResponse(conversation);
+    }
+
+    @Transactional
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteConversation(
+            @PathVariable Integer id,
+            Authentication authentication) {
+
+        conversationService.deleteConversation(
+                id,
+                authentication.getName()
+        );
+
+        return ResponseEntity.noContent().build();
     }
 
 }
