@@ -107,12 +107,18 @@ public class ConversationController {
             @Valid @RequestBody ConversationRequest request,
             Authentication authentication) {
 
+        System.out.println(
+                "Authenticated email: " + authentication.getName()
+        );
+
         Conversation conversation =
                 conversationService.renameConversation(
                         id,
                         authentication.getName(),
                         request.getTitle()
                 );
+
+
 
         return toResponse(conversation);
     }
